@@ -1,8 +1,9 @@
+import os
+import asyncio
 from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
-import os
-import asyncio
+from threading import Thread
 
 # Carga el token desde el archivo
 TOKEN = "8092436564:AAG0AsALo5K8RDX1h6Z4bFF_6l_70r01ktU"
@@ -80,9 +81,14 @@ async def main():
     # Iniciar el bot de Telegram en un hilo separado
     loop = asyncio.get_event_loop()
     await asyncio.gather(
-        app_telegram.run_polling(),
-        run_flask()
+        run_flask_in_thread(),
+        app_telegram.run_polling()
     )
+
+def run_flask_in_thread():
+    """Inicia el servidor Flask en un hilo separado."""
+    thread = Thread(target=run_flask)
+    thread.start()
 
 def run_flask():
     """Inicia el servidor Flask en el bucle de eventos actual"""
