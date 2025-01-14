@@ -16,7 +16,7 @@ import sys
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-TOKEN = "8092436564:AAG0AsALo5K8RDX1h6Z4bFF_6l_70r01ktU"
+TOKEN = "8092436564:AAEev7atEmeZ2m1axAH-n_bbHdglJi0-ctE"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Manda un mensaje cuando se usa el comando /start."""
@@ -87,8 +87,6 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(CallbackQueryHandler(confirm_reading))
-
-    app.run_polling()
 
 if __name__ == "__main__":
     main()
