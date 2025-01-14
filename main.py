@@ -1,14 +1,8 @@
 from flask import Flask
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    MessageHandler,
-    ContextTypes,
-    filters,
-    CallbackQueryHandler,
-)
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
 import os
+import asyncio
 
 # Carga el token desde el archivo
 TOKEN = "8092436564:AAG0AsALo5K8RDX1h6Z4bFF_6l_70r01ktU"
@@ -74,8 +68,8 @@ def index():
     return 'Bot is running...'
 
 # Función principal para iniciar el bot
-def main():
-    """Inicia el bot."""
+async def main():
+    """Inicia el bot de Telegram y el servidor Flask."""
     app_telegram = ApplicationBuilder().token(TOKEN).build()
 
     # Agregar los manejadores de comandos y mensajes
@@ -83,12 +77,16 @@ def main():
     app_telegram.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app_telegram.add_handler(CallbackQueryHandler(confirm_reading))
 
-    # Iniciar el bot en un hilo separado para que siga funcionando mientras Flask está en ejecución
-    import threading
-    threading.Thread(target=lambda: app_telegram.run_polling()).start()
+    # Iniciar el bot de Telegram en un hilo separado
+    loop = asyncio.get_event_loop()
+    await asyncio.gather(
+        app_telegram.run_polling(),
+        run_flask()
+    )
 
-    # Iniciar el servidor Flask para Render
+def run_flask():
+    """Inicia el servidor Flask en el bucle de eventos actual"""
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
