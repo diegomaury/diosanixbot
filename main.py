@@ -5,7 +5,7 @@ from telegram.ext import (
     MessageHandler,
     ContextTypes,
     CallbackQueryHandler,
-    filters,  # Keep the original filters import
+    filters,  # Correct filters import
 )
 
 # Carga el token desde el archivo
@@ -80,7 +80,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
 
     # Agrega un manejador para nuevos miembros con el filtro adecuado
-    app.add_handler(MessageHandler(filters.ChatMemberUpdate.NEW_CHAT_MEMBERS, welcome))
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
 
     # Agrega el manejador de callback_query
     app.add_handler(CallbackQueryHandler(confirm_reading))
