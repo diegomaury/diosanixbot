@@ -5,7 +5,7 @@ from telegram.ext import (
     MessageHandler,
     ContextTypes,
     CallbackQueryHandler,
-    filters,  # Correct filters import
+    filters,
 )
 import os
 from dotenv import load_dotenv
@@ -62,7 +62,6 @@ async def reglas(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Da la bienvenida a los nuevos usuarios que se unen al grupo."""
     for member in update.message.new_chat_members:
-        # Si el usuario tiene username, lo usamos para mencionarlo; de lo contrario, usamos su nombre.
         if member.username:
             mention = f"@{member.username}"
         else:
@@ -113,7 +112,7 @@ async def confirm_reading(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             )
         else:
             await query.edit_message_text(
-                text="Ya has confirmado que has leído las reglas. ¡Bienvenido de nuevo!"
+                text="Ya has confirmado que has leído las reglas. ¡Bienvenido de nuevo! 🎉"
             )
     elif query.data == 'join_group':
         await query.edit_message_text(
