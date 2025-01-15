@@ -7,9 +7,15 @@ from telegram.ext import (
     CallbackQueryHandler,
     filters,  # Correct filters import
 )
+import os
+from dotenv import load_dotenv
 
-# Carga el token desde el archivo
-TOKEN = "8092436564:AAEUPd_CvaNa_mcx5v8HU3v2Lbv8ZZmB0-0"
+# Cargar las variables de entorno del archivo .env
+load_dotenv()
+
+# Obtener el token de la variable de entorno
+TOKEN = os.getenv("TOKEN")
+
 
 confirmed_users = set()  # Usar un conjunto para almacenar IDs de usuarios confirmados
 
