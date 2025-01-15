@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -16,6 +16,9 @@ load_dotenv()
 # Obtener el token de la variable de entorno
 TOKEN = os.getenv("TOKEN")
 
+# Verifica si el token fue cargado correctamente
+if not TOKEN:
+    raise ValueError("El token de la API no está configurado correctamente en el archivo .env.")
 
 confirmed_users = set()  # Usar un conjunto para almacenar IDs de usuarios confirmados
 
@@ -82,6 +85,14 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             reply_markup=reply_markup
         )
 
+        # Bloquea al nuevo usuario hasta que confirme las reglas
+        chat_permissions = ChatPermissions(can_send_messages=False)
+        await context.bot.restrict_chat_member(
+            update.effective_chat.id,
+            member.id,
+            permissions=chat_permissions
+        )
+
 async def confirm_reading(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Maneja las respuestas de los botones."""
     query = update.callback_query
@@ -90,6 +101,13 @@ async def confirm_reading(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if query.data == 'confirmado':
         if user_id not in confirmed_users:
             confirmed_users.add(user_id)
+            # Libera al usuario para enviar mensajes
+            chat_permissions = ChatPermissions(can_send_messages=True)
+            await context.bot.restrict_chat_member(
+                update.effective_chat.id,
+                user_id,
+                permissions=chat_permissions
+            )
             await query.edit_message_text(
                 text="¡Gracias por confirmar que has leído las reglas! 🎉 ¡Perverso!😈"
             )
@@ -110,23 +128,27 @@ async def confirm_reading(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 def main():
     """Inicia el bot."""
-    # Construye la aplicación
-    app = ApplicationBuilder().token(TOKEN).build()
+    try:
+        # Construye la aplicación
+        app = ApplicationBuilder().token(TOKEN).build()
 
-    # Agrega el comando /start solo para chats privados
-    app.add_handler(CommandHandler("start", start, filters=filters.ChatType.PRIVATE))
+        # Agrega el comando /start solo para chats privados
+        app.add_handler(CommandHandler("start", start, filters=filters.ChatType.PRIVATE))
 
-    # Agrega el comando /reglas
-    app.add_handler(CommandHandler("reglas", reglas))
+        # Agrega el comando /reglas
+        app.add_handler(CommandHandler("reglas", reglas))
 
-    # Agrega un manejador para nuevos miembros con el filtro adecuado
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
+        # Agrega un manejador para nuevos miembros con el filtro adecuado
+        app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
 
-    # Agrega el manejador de callback_query
-    app.add_handler(CallbackQueryHandler(confirm_reading))
+        # Agrega el manejador de callback_query
+        app.add_handler(CallbackQueryHandler(confirm_reading))
 
-    # Inicia el bot
-    app.run_polling()
+        # Inicia el bot
+        app.run_polling()
+
+    except Exception as e:
+        print(f"Error al iniciar el bot: {e}")
 
 if __name__ == "__main__":
     main()
