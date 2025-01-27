@@ -14,22 +14,29 @@ from telegram.ext import (
     ContextTypes,
     filters,
 )
+from telegram.error import BadRequest
 
 # Cargar variables de entorno
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
+ADMIN_USER_ID = int(os.getenv("ADMIN_USER_ID"))  # Agrega tu ID de usuario al archivo .env
 
-if not TOKEN:
-    raise ValueError("El token de la API no está configurado correctamente en el archivo .env.")
+if not TOKEN or not ADMIN_USER_ID:
+    raise ValueError("El token de la API o ADMIN_USER_ID no están configurados correctamente en el archivo .env.")
 
 # Usuarios confirmados
 confirmed_users = set()
 
+# Inicializa un contador global
+interaction_counter = 0
 
 # Función para manejar los botones
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    global interaction_counter
+    interaction_counter += 1
     query = update.callback_query
     user_id = update.effective_user.id
+    user_name = update.effective_user.first_name
     await query.answer()  # Confirma la interacción
 
     if query.data == "confirmado":
@@ -42,25 +49,36 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             await query.edit_message_text("¡Gracias por confirmar las reglas! 🎉")
         else:
             await query.edit_message_text("Ya confirmaste las reglas anteriormente. ¡Bienvenido! 🎉")
+
+        # Notificación privada al administrador
+        try:
+            await context.bot.send_message(
+                chat_id=ADMIN_USER_ID,
+                text=f"✅ Usuario confirmado:\n- Nombre: {user_name}\n- ID: {user_id}\n- Interacción número: {interaction_counter}",
+            )
+        except BadRequest as e:
+            print(f"Error al enviar mensaje al administrador: {e}")
+
     elif query.data == "join_group":
         await query.edit_message_text(
-    text=(
-        "🔥 ¡Excelente decisión! Utiliza este enlace para unirte:\n"
-        "¿Nos acompañas con unos fumes con Neumus? 😈\n\n"
-        "https://bit.ly/neumuskink\n\n"
-        "Meeting ID: 891 5220 5303\n"
-        "Passcode: kink\n\n"
-        "#zoomgay #gayzoom #fumesgay #morbo"
-    ),
-    parse_mode="Markdown",
-)
+            text=(
+                "🔥 ¡Excelente decisión! Utiliza este enlace para unirte:\n"
+                "¿Nos acompañas con unos fumes con Neumus? 😈\n\n"
+                "https://bit.ly/neumuskink\n\n"
+                "Meeting ID: 891 5220 5303\n"
+                "Passcode: kink\n\n"
+                "#zoomgay #gayzoom #fumesgay #morbo"
+            ),
+            parse_mode="Markdown",
+        )
 
     elif query.data == "decline_group":
         await query.edit_message_text("✨ No hay problema. Si cambias de opinión, usa /start.")
 
-
 # Función para el comando /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    global interaction_counter
+    interaction_counter += 1
     if update.effective_chat.type != "private":
         return  # Ignorar si no es chat privado
 
@@ -84,9 +102,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         reply_markup=reply_markup,
     )
 
+    # Notificación privada al administrador
+    try:
+        await context.bot.send_message(
+            chat_id=ADMIN_USER_ID,
+            text=f"📩 Nuevo /start:\n- Nombre: {user_name}\n- ID: {update.effective_user.id}\n- Interacción número: {interaction_counter}",
+        )
+    except BadRequest as e:
+        print(f"Error al enviar mensaje al administrador: {e}")
 
 # Función para dar la bienvenida en grupos
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    global interaction_counter
+    interaction_counter += 1
     for member in update.message.new_chat_members:
         mention = f"@{member.username}" if member.username else member.first_name
         keyboard = [
@@ -108,6 +136,10 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             update.effective_chat.id, member.id, permissions=chat_permissions
         )
 
+# Función para mostrar el contador de interacciones
+async def show_interactions(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    global interaction_counter
+    await update.message.reply_text(f"Interacciones totales: {interaction_counter}")
 
 # Configurar y ejecutar el bot
 if __name__ == "__main__":
@@ -115,6 +147,7 @@ if __name__ == "__main__":
 
     # Handlers
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("show_interactions", show_interactions))
     application.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     application.add_handler(CallbackQueryHandler(button))
 
